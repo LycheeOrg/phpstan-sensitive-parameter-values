@@ -23,7 +23,7 @@ Learn more: [PHP RFC: Redact parameters in back traces](https://wiki.php.net/rfc
 ## Installation
 
 ```bash
-composer require --dev built-fast/phpstan-sensitive-parameter
+composer require --dev lychee-org/phpstan-sensitive-parameter-values
 ```
 
 ## Usage
@@ -34,7 +34,7 @@ Alternatively, include the extension in your PHPStan configuration:
 
 ```neon
 includes:
-    - vendor/built-fast/phpstan-sensitive-parameter/extension.neon
+    - vendor/lychee-org/phpstan-sensitive-parameter-values/extension.neon
 ```
 
 ## Typed `SensitiveParameterValue`
@@ -242,7 +242,7 @@ includes:
 services:
     # Override the default service with custom keywords
     -
-        class: BuiltFast\Rules\SensitiveParameterDetectorRule
+        class: LycheeOrg\PHPStan\Rules\SensitiveParameterDetectorRule
         arguments:
             - ['password', 'apikey', 'token', 'banking', 'medical']  # Your custom keywords
         tags:
