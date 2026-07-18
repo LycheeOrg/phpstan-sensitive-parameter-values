@@ -108,6 +108,46 @@ function calls. Only simple, unmodified pass-through arguments (a bare
 are tracked — values that are transformed, wrapped, or reassigned before
 being passed on are not.
 
+### Cryptographic callees are never flagged
+
+Passing a sensitive value directly into a hashing or encryption function is
+the *intended* usage — there is nothing to propagate. The rule ships with a
+built-in allowlist of well-known cryptographic functions and methods that will
+never trigger a propagation warning:
+
+```php
+function hashPassword(#[\SensitiveParameter] string $password): string
+{
+    return password_hash($password, PASSWORD_BCRYPT); // ✅ not flagged
+}
+
+class AuthService
+{
+    public function store(#[\SensitiveParameter] string $password): void
+    {
+        $hash = Hash::make($password); // ✅ not flagged (Laravel)
+    }
+}
+```
+
+The built-in allowlist covers:
+
+- **PHP core** — `password_hash`, `password_verify`, `hash`, `hash_hmac`,
+  `hash_pbkdf2`, `hash_equals`, `crypt`, `md5`, `sha1`
+- **OpenSSL** — `openssl_encrypt`, `openssl_decrypt`, `openssl_digest`,
+  `openssl_sign`, `openssl_verify`
+- **Sodium** — `sodium_crypto_pwhash`, `sodium_crypto_pwhash_str`,
+  `sodium_crypto_pwhash_str_verify`, `sodium_crypto_secretbox`,
+  `sodium_crypto_secretbox_open`, `sodium_crypto_auth`,
+  `sodium_crypto_auth_verify`, `sodium_crypto_box`, `sodium_crypto_box_open`,
+  `sodium_crypto_sign`, and others
+- **Laravel** — `Illuminate\Support\Facades\Hash::make/check/needsRehash`
+  and the concrete `BcryptHasher`, `ArgonHasher`, `Argon2IdHasher` variants
+- **LdapRecord** — `LdapRecord\Auth\Guard::attempt`
+
+See [Configuring the cryptographic callee allowlist](#configuring-the-cryptographic-callee-allowlist)
+for how to add your own entries.
+
 ## Storing sensitive values safely
 
 Marking a parameter sensitive prevents it from leaking through stack traces,
@@ -233,23 +273,57 @@ class AuthService {
 
 ## Advanced Configuration
 
-To use custom sensitive keywords instead of the defaults, override the service:
+### Configuring sensitive keywords
+
+To use custom sensitive keywords instead of the defaults, set
+`sensitiveParameter.keywords` in your `phpstan.neon`:
 
 ```neon
-includes:
-    - vendor/built-fast/phpstan-sensitive-parameter/extension.neon
-
-services:
-    # Override the default service with custom keywords
-    -
-        class: LycheeOrg\PHPStan\Rules\SensitiveParameterDetectorRule
-        arguments:
-            - ['password', 'apikey', 'token', 'banking', 'medical']  # Your custom keywords
-        tags:
-            - phpstan.rules.rule
+parameters:
+    sensitiveParameter:
+        keywords:
+            - password
+            - apikey
+            - token
+            - banking
+            - medical
 ```
 
-This completely replaces the default keyword list with your own.
+Providing a non-empty list **completely replaces** the default keyword list.
+
+### Configuring the cryptographic callee allowlist
+
+If your project uses a custom hashing or encryption wrapper that should not
+trigger a propagation warning, add it to `sensitiveParameter.cryptoCallees`:
+
+```neon
+parameters:
+    sensitiveParameter:
+        cryptoCallees:
+            - 'App\Security\Hasher::hash'
+            - 'App\Security\Hasher::verify'
+```
+
+Entries are matched as:
+- **Plain function name** for global PHP functions (e.g. `my_hash_fn`)
+- **`FullyQualifiedClass::method`** for static calls and instance method calls
+  (e.g. `Illuminate\Support\Facades\Hash::make`)
+
+Providing a non-empty list **completely replaces** the built-in allowlist, so
+include any built-in entries you still want to keep:
+
+```neon
+parameters:
+    sensitiveParameter:
+        cryptoCallees:
+            - password_hash
+            - password_verify
+            - hash
+            - hash_hmac
+            - 'Illuminate\Support\Facades\Hash::make'
+            - 'Illuminate\Support\Facades\Hash::check'
+            - 'App\Security\Hasher::hash'
+```
 
 ## Suppressing Warnings
 

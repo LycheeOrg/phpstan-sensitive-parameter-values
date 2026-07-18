@@ -44,8 +44,80 @@ use PHPStan\Rules\RuleErrorBuilder;
  */
 final class SensitiveParameterPropagationRule implements Rule
 {
-    public function __construct(private ReflectionProvider $reflectionProvider)
-    {
+    /**
+     * Built-in cryptographic functions and methods that are designed to receive
+     * sensitive values. Passing a #[\SensitiveParameter] argument into these
+     * is the intended safe pattern and must never be flagged.
+     *
+     * Functions are listed by their fully-qualified name; methods by
+     * "FullyQualifiedClass::methodName".
+     */
+    private const DEFAULT_CRYPTO_CALLEES = [
+        // PHP built-in password functions
+        'password_hash',
+        'password_verify',
+        // PHP built-in hash functions
+        'hash',
+        'hash_hmac',
+        'hash_pbkdf2',
+        'hash_equals',
+        'crypt',
+        'md5',
+        'sha1',
+        // OpenSSL
+        'openssl_encrypt',
+        'openssl_decrypt',
+        'openssl_digest',
+        'openssl_sign',
+        'openssl_verify',
+        // Sodium
+        'sodium_crypto_pwhash',
+        'sodium_crypto_pwhash_str',
+        'sodium_crypto_pwhash_str_verify',
+        'sodium_crypto_secretbox',
+        'sodium_crypto_secretbox_open',
+        'sodium_crypto_auth',
+        'sodium_crypto_auth_verify',
+        'sodium_crypto_box',
+        'sodium_crypto_box_open',
+        'sodium_crypto_sign',
+        'sodium_crypto_sign_open',
+        'sodium_crypto_sign_detached',
+        'sodium_crypto_sign_verify_detached',
+        'sodium_crypto_aead_xchacha20poly1305_ietf_encrypt',
+        'sodium_crypto_aead_xchacha20poly1305_ietf_decrypt',
+        'sodium_crypto_generichash',
+        'sodium_crypto_shorthash',
+        // Laravel Hash facade
+        'Illuminate\Support\Facades\Hash::make',
+        'Illuminate\Support\Facades\Hash::check',
+        'Illuminate\Support\Facades\Hash::needsRehash',
+        // Laravel concrete hashing implementations
+        'Illuminate\Hashing\BcryptHasher::make',
+        'Illuminate\Hashing\BcryptHasher::check',
+        'Illuminate\Hashing\ArgonHasher::make',
+        'Illuminate\Hashing\ArgonHasher::check',
+        'Illuminate\Hashing\Argon2IdHasher::make',
+        'Illuminate\Hashing\Argon2IdHasher::check',
+        // LdapRecord authentication
+        'LdapRecord\Auth\Guard::attempt',
+    ];
+
+    /** @var string[] */
+    private array $cryptoCallees;
+
+    /**
+     * @param string[] $cryptoCallees Fully-qualified function names or
+     *   "ClassName::method" strings for callees that are designed to receive
+     *   sensitive values (hashing, encryption, …) and must not trigger a
+     *   propagation warning. When an empty array is provided the built-in
+     *   defaults are used; supply a non-empty list to override them entirely.
+     */
+    public function __construct(
+        private ReflectionProvider $reflectionProvider,
+        array $cryptoCallees = [],
+    ) {
+        $this->cryptoCallees = $cryptoCallees !== [] ? $cryptoCallees : self::DEFAULT_CRYPTO_CALLEES;
     }
 
     public function getNodeType(): string
@@ -76,6 +148,10 @@ final class SensitiveParameterPropagationRule implements Rule
         }
 
         $callerFunctionProtected = $this->hasSensitiveAttribute($callerFunction->getAttributes());
+
+        if ($this->isSafeCallee($node, $scope)) {
+            return [];
+        }
 
         $callee = $this->resolveCallee($node, $scope);
         if ($callee === null) {
@@ -130,6 +206,55 @@ final class SensitiveParameterPropagationRule implements Rule
         }
 
         return $errors;
+    }
+
+    /**
+     * Returns true when the callee is a known cryptographic / hashing function
+     * that is specifically designed to receive sensitive data, so no
+     * propagation error should be raised for it.
+     */
+    private function isSafeCallee(CallLike $node, Scope $scope): bool
+    {
+        if ($node instanceof FuncCall && $node->name instanceof Node\Name) {
+            if (! $this->reflectionProvider->hasFunction($node->name, $scope)) {
+                return false;
+            }
+
+            return in_array(
+                $this->reflectionProvider->getFunction($node->name, $scope)->getName(),
+                $this->cryptoCallees,
+                true,
+            );
+        }
+
+        $methodName = null;
+        $classNames = [];
+
+        if (
+            ($node instanceof MethodCall || $node instanceof NullsafeMethodCall)
+            && $node->name instanceof Node\Identifier
+        ) {
+            $methodName = $node->name->toString();
+            $classNames = $scope->getType($node->var)->getObjectClassNames();
+        } elseif ($node instanceof StaticCall && $node->name instanceof Node\Identifier) {
+            $methodName = $node->name->toString();
+            $type = $node->class instanceof Node\Name
+                ? $scope->resolveTypeByName($node->class)
+                : $scope->getType($node->class);
+            $classNames = $type->getObjectClassNames();
+        }
+
+        if ($methodName === null) {
+            return false;
+        }
+
+        foreach ($classNames as $className) {
+            if (in_array("{$className}::{$methodName}", $this->cryptoCallees, true)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
