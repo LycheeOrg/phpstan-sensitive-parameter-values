@@ -1,0 +1,32 @@
+<?php
+
+/**
+ * @template T
+ */
+final class SensitiveParameterValue implements Stringable
+{
+    /**
+     * @param T $value
+     */
+    public function __construct(mixed $value)
+    {
+    }
+
+    /**
+     * @return T
+     */
+    public function getValue(): mixed
+    {
+    }
+
+    public function __toString(): string
+    {
+    }
+
+    /**
+     * @return array{value: T}
+     */
+    public function __debugInfo(): array
+    {
+    }
+}

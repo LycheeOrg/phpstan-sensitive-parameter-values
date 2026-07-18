@@ -36,6 +36,136 @@ includes:
     - vendor/built-fast/phpstan-sensitive-parameter/extension.neon
 ```
 
+## Typed `SensitiveParameterValue`
+
+PHP's built-in `\SensitiveParameterValue::getValue()` is natively typed as
+`mixed`, so calling it normally loses type information. This extension ships
+a PHPStan stub that declares `SensitiveParameterValue` as generic over the
+type of the value passed to its constructor, so PHPStan can narrow the
+return type of `getValue()` accordingly:
+
+```php
+function example(string $password): void {
+    $sensitive = new \SensitiveParameterValue($password);
+
+    // PHPStan now sees $sensitive as SensitiveParameterValue<string>
+    // and infers the return type of getValue() as string, not mixed.
+    $plain = $sensitive->getValue();
+}
+```
+
+This is most useful when inspecting exception traces, where PHP replaces
+sensitive arguments with `SensitiveParameterValue` instances:
+
+```php
+foreach ($exception->getTrace() as $frame) {
+    foreach ($frame['args'] ?? [] as $arg) {
+        if ($arg instanceof \SensitiveParameterValue) {
+            // getValue() keeps the original argument's type.
+            $original = $arg->getValue();
+        }
+    }
+}
+```
+
+## Propagating sensitivity through the call graph
+
+Marking a parameter `#[\SensitiveParameter]` only protects that one call
+frame. If the value is then forwarded unchanged into a callee whose
+corresponding parameter is *not* marked sensitive, protection stops there: an
+exception thrown from inside the callee will still expose the value in
+plaintext.
+
+```php
+class AuthService {
+    // $password is marked sensitive here...
+    public function authenticate(#[\SensitiveParameter] string $password): bool {
+        // ...but login()'s parameter isn't, so the value is unprotected
+        // as soon as it enters login()'s stack frame.
+        return $this->login($password);
+    }
+
+    public function login(string $password): bool {
+        // ...
+    }
+}
+```
+
+`SensitiveParameterPropagationRule` flags `login()`'s `$password`
+in this example, with:
+
+```
+Parameter $password is marked #[\SensitiveParameter] but is passed to a
+parameter ($password) that is not itself marked with #[\SensitiveParameter].
+Add the attribute there too or ignore with
+`@phpstan-ignore sensitiveParameter.propagation`.
+```
+
+This is detected across method calls, static calls, constructors, and plain
+function calls. Only simple, unmodified pass-through arguments (a bare
+`$variable` matching a sensitive parameter of the enclosing function/method)
+are tracked — values that are transformed, wrapped, or reassigned before
+being passed on are not.
+
+## Storing sensitive values safely
+
+Marking a parameter sensitive prevents it from leaking through stack traces,
+but that protection is undone if the raw value is then saved into a property
+— anything that inspects, dumps, or serializes the object exposes it again.
+`SensitiveParameterStorageRule` requires sensitive values to be wrapped in
+`\SensitiveParameterValue` before being stored:
+
+```php
+class Credentials {
+    private string $password; // ❌ raw storage
+
+    public function __construct(#[\SensitiveParameter] string $password) {
+        $this->password = $password; // flagged: sensitiveParameter.unwrappedStorage
+    }
+}
+```
+
+```php
+class Credentials {
+    private \SensitiveParameterValue $password; // ✅ wrapped storage
+
+    public function __construct(#[\SensitiveParameter] string $password) {
+        $this->password = new \SensitiveParameterValue($password);
+    }
+}
+```
+
+Constructor property promotion is also checked, since promotion assigns the
+raw value directly with no place to wrap it:
+
+```php
+class Credentials {
+    public function __construct(
+        // flagged: sensitiveParameter.unwrappedPromotion
+        #[\SensitiveParameter] private readonly string $password,
+    ) {}
+}
+```
+
+A value that's already wrapped is also checked: unwrapping it via
+`->getValue()` right before storing defeats the point of wrapping it in the
+first place, so it's flagged too:
+
+```php
+class Credentials {
+    private string $password;
+
+    public function __construct(\SensitiveParameterValue $password) {
+        // flagged: sensitiveParameter.unwrappedGetValue
+        $this->password = $password->getValue();
+    }
+}
+```
+
+Only direct, unmodified assignments of a bare `$variable` (or a bare
+`->getValue()` call on one) into a property are detected; values transformed
+before being stored are not tracked.
+
 ## What it detects
 
 The rule detects parameters with names containing common sensitive keywords:

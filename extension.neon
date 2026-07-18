@@ -1,5 +1,17 @@
+parameters:
+    stubFiles:
+        - stubs/SensitiveParameterValue.stub
+
 services:
     -
         class: BuiltFast\Rules\SensitiveParameterDetectorRule
+        tags:
+            - phpstan.rules.rule
+    -
+        class: BuiltFast\Rules\SensitiveParameterPropagationRule
+        tags:
+            - phpstan.rules.rule
+    -
+        class: BuiltFast\Rules\SensitiveParameterStorageRule
         tags:
             - phpstan.rules.rule

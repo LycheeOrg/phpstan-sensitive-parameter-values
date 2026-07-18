@@ -10,7 +10,7 @@ use PHPStan\Testing\RuleTestCase;
 /**
  * @extends RuleTestCase<SensitiveParameterDetectorRule>
  */
-abstract class TestCase extends RuleTestCase
+abstract class DetectorTestCase extends RuleTestCase
 {
     protected SensitiveParameterDetectorRule $rule;
 
