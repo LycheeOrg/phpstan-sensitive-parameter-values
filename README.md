@@ -1,9 +1,10 @@
 # PHPStan SensitiveParameter Detector
 
-[![CI](https://github.com/built-fast/phpstan-sensitive-parameter/workflows/CI/badge.svg)](https://github.com/built-fast/phpstan-sensitive-parameter/actions)
-[![Latest Stable Version](https://poser.pugx.org/built-fast/phpstan-sensitive-parameter/v/stable)](https://packagist.org/packages/built-fast/phpstan-sensitive-parameter)
-[![Total Downloads](https://poser.pugx.org/built-fast/phpstan-sensitive-parameter/downloads)](https://packagist.org/packages/built-fast/phpstan-sensitive-parameter)
-[![License](https://poser.pugx.org/built-fast/phpstan-sensitive-parameter/license)](https://packagist.org/packages/built-fast/phpstan-sensitive-parameter)
+[![CI](https://github.com/LycheeOrg/phpstan-sensitive-parameter/workflows/CI/badge.svg)](https://github.com/LycheeOrg/phpstan-sensitive-parameter/actions)
+<!-- [![Latest Stable Version](https://poser.pugx.org/LycheeOrg/phpstan-sensitive-parameter/v/stable)](https://packagist.org/packages/LycheeOrg/phpstan-sensitive-parameter) -->
+<!-- [![Total Downloads](https://poser.pugx.org/LycheeOrg/phpstan-sensitive-parameter/downloads)](https://packagist.org/packages/LycheeOrg/phpstan-sensitive-parameter) -->
+[![License](https://poser.pugx.org/LycheeOrg/phpstan-sensitive-parameter/license)](https://packagist.org/packages/LycheeOrg/phpstan-sensitive-parameter)
+[![OpenSSF Scorecard][ossf-shield]](https://securityscorecards.dev/viewer/?uri=github.com/LycheeOrg/Lychee-Facial-Recognition)
 
 A PHPStan extension that detects parameters that might contain sensitive information and should be marked with the `#[\SensitiveParameter]` attribute (added in PHP 8.2+).
 
@@ -206,3 +207,5 @@ vendor/bin/pint --test      # Code style check
 ## License
 
 MIT License - see [`LICENSE`](./LICENSE) for details.
+
+[ossf-shield]: https://api.securityscorecards.dev/projects/github.com/LycheeOrg/phpstan-sensitive-parameter-value/badge

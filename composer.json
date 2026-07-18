@@ -1,9 +1,9 @@
 {
-    "name": "built-fast/phpstan-sensitive-parameter",
-    "description": "PHPStan extension for detecting parameters that should use SensitiveParameter",
+    "name": "lychee-org/phpstan-sensitive-parameter-values",
+    "description": "PHPStan extension for better support of SensitiveParameter and SensitiveParameterValue attributes.",
     "type": "phpstan-extension",
     "license": "MIT",
-    "homepage": "https://github.com/built-fast/phpstan-sensitive-parameter",
+    "homepage": "https://github.com/LycheeOrg/phpstan-sensitive-parameter-values",
     "keywords": [
         "phpstan",
         "phpstan-extension",
@@ -15,14 +15,18 @@
     ],
     "authors": [
         {
+            "name": "LycheeOrg",
+            "homepage": "https://github.com/LycheeOrg/phpstan-sensitive-parameter-values"
+        },
+        {
             "name": "Josh Priddle",
             "homepage": "https://github.com/built-fast/phpstan-sensitive-parameter"
         }
     ],
     "support": {
-        "issues": "https://github.com/built-fast/phpstan-sensitive-parameter/issues",
-        "forum": "https://github.com/built-fast/phpstan-sensitive-parameter/discussions",
-        "source": "https://github.com/built-fast/phpstan-sensitive-parameter"
+        "issues": "https://github.com/LycheeOrg/phpstan-sensitive-parameter-values/issues",
+        "forum": "https://github.com/LycheeOrg/phpstan-sensitive-parameter-values/discussions",
+        "source": "https://github.com/LycheeOrg/phpstan-sensitive-parameter-values"
     },
     "require": {
         "php": "^8.2",
