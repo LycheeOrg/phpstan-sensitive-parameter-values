@@ -1,9 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * @template T
  */
-final class SensitiveParameterValue implements Stringable
+final class SensitiveParameterValue
 {
     /**
      * @param T $value
@@ -13,20 +15,16 @@ final class SensitiveParameterValue implements Stringable
     }
 
     /**
-     * @return T
+     * @return array{value: T}
      */
-    public function getValue(): mixed
-    {
-    }
-
-    public function __toString(): string
+    public function __debugInfo(): array
     {
     }
 
     /**
-     * @return array{value: T}
+     * @return T
      */
-    public function __debugInfo(): array
+    public function getValue(): mixed
     {
     }
 }

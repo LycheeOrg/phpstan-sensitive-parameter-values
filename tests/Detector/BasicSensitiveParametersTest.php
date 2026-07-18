@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use BuiltFast\Rules\SensitiveParameterDetectorRule;
+use LycheeOrg\PHPStan\Rules\SensitiveParameterDetectorRule;
 
 beforeEach(function () {
     $this->rule = new SensitiveParameterDetectorRule();

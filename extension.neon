@@ -4,14 +4,14 @@ parameters:
 
 services:
     -
-        class: BuiltFast\Rules\SensitiveParameterDetectorRule
+        class: LycheeOrg\PHPStan\Rules\SensitiveParameterDetectorRule
         tags:
             - phpstan.rules.rule
     -
-        class: BuiltFast\Rules\SensitiveParameterPropagationRule
+        class: LycheeOrg\PHPStan\Rules\SensitiveParameterPropagationRule
         tags:
             - phpstan.rules.rule
     -
-        class: BuiltFast\Rules\SensitiveParameterStorageRule
+        class: LycheeOrg\PHPStan\Rules\SensitiveParameterStorageRule
         tags:
             - phpstan.rules.rule

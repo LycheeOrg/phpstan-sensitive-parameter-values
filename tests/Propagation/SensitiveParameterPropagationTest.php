@@ -20,5 +20,9 @@ it('flags sensitive parameters that are passed to a callee parameter without bei
             'Parameter $apiKey is marked #[\\SensitiveParameter] but is passed to a parameter ($apiKey) that is not itself marked with #[\\SensitiveParameter]. Add the attribute there too or ignore with `@phpstan-ignore sensitiveParameter.propagation`.',
             73,
         ],
+        [
+            'Parameter $secret is marked #[\\SensitiveParameter] but is passed to a parameter ($values) that is not itself marked with #[\\SensitiveParameter]. Add the attribute there too or ignore with `@phpstan-ignore sensitiveParameter.propagation`.',
+            80,
+        ],
     ]);
 });

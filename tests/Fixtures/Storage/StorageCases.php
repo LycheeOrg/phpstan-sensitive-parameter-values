@@ -72,12 +72,20 @@ final class StorageCases
         $this->password = mb_trim($password);
     }
 
-    // Sensitive parameter is unwrapped before storage, but the warning is ignored - should NOT trigger warning
-    public function unwrappedAssignmentWithIgnore(SensitiveParameterValue $password): void
+    // Sensitive parameter is unwrapped into a temporary variable before storage; the rule only
+    // matches a direct `$var->getValue()` call, so routing through an intermediate variable
+    // defeats detection - should NOT trigger warning (known limitation, not an endorsed pattern)
+    public function temporaryVariableIndirectionIsNotFlagged(SensitiveParameterValue $password): void
     {
-        // Unwrap the value.
-        $password_temp = $password->getValue();
-        // We now store the unwrapped value, this is voluntary unsafe and the developer is aware of the risk, so we ignore the warning.
-        $this->password = $password_temp;
+        $passwordValue = $password->getValue();
+        $this->password = $passwordValue;
+    }
+
+    // Sensitive parameter is reassigned before storage, so it no longer provably holds the
+    // original sensitive value - should NOT trigger warning
+    public function reassignedParameterIsNotFlagged(#[SensitiveParameter] string $password): void
+    {
+        $password = 'redacted';
+        $this->password = $password;
     }
 }

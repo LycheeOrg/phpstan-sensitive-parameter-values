@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests;
 
-use BuiltFast\Rules\SensitiveParameterStorageRule;
+use LycheeOrg\PHPStan\Rules\SensitiveParameterStorageRule;
 use PHPStan\Testing\RuleTestCase;
 
 /**

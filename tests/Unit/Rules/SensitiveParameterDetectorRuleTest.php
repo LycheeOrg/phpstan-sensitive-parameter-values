@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use BuiltFast\Rules\SensitiveParameterDetectorRule;
+use LycheeOrg\PHPStan\Rules\SensitiveParameterDetectorRule;
 use PhpParser\Node\FunctionLike;
 use PHPStan\Rules\Rule;
 

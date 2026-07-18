@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace BuiltFast\Rules;
+namespace LycheeOrg\PHPStan\Rules;
 
 use PhpParser\Node;
 use PhpParser\Node\Arg;
@@ -16,6 +16,8 @@ use PhpParser\Node\Expr\Variable;
 use PHPStan\Analyser\Scope;
 use PHPStan\Reflection\AttributeReflection;
 use PHPStan\Reflection\ExtendedParameterReflection;
+use PHPStan\Reflection\ExtendedParametersAcceptor;
+use PHPStan\Reflection\ParametersAcceptorSelector;
 use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
@@ -32,8 +34,11 @@ use PHPStan\Rules\RuleErrorBuilder;
  *
  * Only simple, unmodified pass-through arguments (a bare `$variable` matching
  * a sensitive parameter of the enclosing function/method) are detected.
- * Values that are transformed, wrapped, or reassigned before being passed on
- * are not tracked.
+ * Values that are transformed or wrapped before being passed on are not
+ * tracked. Reassignment is only partially detected: if PHPStan can prove the
+ * variable now holds a literal/constant value at the call site, it is no
+ * longer treated as the original parameter; reassignment to another
+ * non-constant expression of the same type is not detected.
  *
  * @implements Rule<CallLike>
  */
@@ -100,6 +105,12 @@ final class SensitiveParameterPropagationRule implements Rule
                 continue;
             }
 
+            if ($scope->getVariableType($arg->value->name)->isConstantValue()->yes()) {
+                // The variable has been reassigned to a literal/constant value
+                // and no longer certainly holds the original sensitive value.
+                continue;
+            }
+
             $calleeParam = $this->resolveCalleeParameter($calleeParams, $arg, $position);
             if ($calleeParam === null) {
                 continue;
@@ -133,7 +144,7 @@ final class SensitiveParameterPropagationRule implements Rule
             }
 
             $method = $type->getMethod('__construct', $scope);
-            $variant = $method->getVariants()[0] ?? null;
+            $variant = $this->selectVariant($scope, $node, $method->getVariants(), $method->getNamedArgumentsVariants());
 
             return $variant === null ? null : [$method->getAttributes(), $variant->getParameters()];
         }
@@ -154,7 +165,7 @@ final class SensitiveParameterPropagationRule implements Rule
             }
 
             $method = $type->getMethod($methodName, $scope);
-            $variant = $method->getVariants()[0] ?? null;
+            $variant = $this->selectVariant($scope, $node, $method->getVariants(), $method->getNamedArgumentsVariants());
 
             return $variant === null ? null : [$method->getAttributes(), $variant->getParameters()];
         }
@@ -178,7 +189,7 @@ final class SensitiveParameterPropagationRule implements Rule
             }
 
             $method = $type->getMethod($methodName, $scope);
-            $variant = $method->getVariants()[0] ?? null;
+            $variant = $this->selectVariant($scope, $node, $method->getVariants(), $method->getNamedArgumentsVariants());
 
             return $variant === null ? null : [$method->getAttributes(), $variant->getParameters()];
         }
@@ -192,9 +203,28 @@ final class SensitiveParameterPropagationRule implements Rule
         }
 
         $function = $this->reflectionProvider->getFunction($node->name, $scope);
-        $variant = $function->getVariants()[0] ?? null;
+        $variant = $this->selectVariant($scope, $node, $function->getVariants(), $function->getNamedArgumentsVariants());
 
         return $variant === null ? null : [$function->getAttributes(), $variant->getParameters()];
+    }
+
+    /**
+     * Picks the variant matching the actual call-site arguments (handling
+     * overloads and named-argument variants) instead of blindly assuming the
+     * first declared variant is the right one.
+     *
+     * @param  ExtendedParametersAcceptor[]  $variants
+     * @param  ExtendedParametersAcceptor[]|null  $namedArgumentsVariants
+     */
+    private function selectVariant(Scope $scope, CallLike $node, array $variants, ?array $namedArgumentsVariants): ?ExtendedParametersAcceptor
+    {
+        if ($variants === []) {
+            return null;
+        }
+
+        $selected = ParametersAcceptorSelector::selectFromArgs($scope, $node->getArgs(), $variants, $namedArgumentsVariants);
+
+        return $selected instanceof ExtendedParametersAcceptor ? $selected : null;
     }
 
     /**
@@ -217,19 +247,22 @@ final class SensitiveParameterPropagationRule implements Rule
     private function resolveCalleeParameter(array $calleeParams, Arg $arg, int $position): ?ExtendedParameterReflection
     {
         if ($arg->name instanceof Node\Identifier) {
-            return $this->findParameterByName($calleeParams, $arg->name->toString());
+            $named = $this->findParameterByName($calleeParams, $arg->name->toString());
+
+            return $named ?? $this->variadicParameter($calleeParams);
         }
 
-        if (isset($calleeParams[$position])) {
-            return $calleeParams[$position];
-        }
+        return $calleeParams[$position] ?? $this->variadicParameter($calleeParams);
+    }
 
+    /**
+     * @param  ExtendedParameterReflection[]  $calleeParams
+     */
+    private function variadicParameter(array $calleeParams): ?ExtendedParameterReflection
+    {
         $lastParam = $calleeParams[count($calleeParams) - 1] ?? null;
-        if ($lastParam !== null && $lastParam->isVariadic()) {
-            return $lastParam;
-        }
 
-        return null;
+        return ($lastParam !== null && $lastParam->isVariadic()) ? $lastParam : null;
     }
 
     /**

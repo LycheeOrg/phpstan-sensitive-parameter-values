@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace BuiltFast\Rules;
+namespace LycheeOrg\PHPStan\Rules;
 
 use PhpParser\Node;
 use PhpParser\Node\FunctionLike;

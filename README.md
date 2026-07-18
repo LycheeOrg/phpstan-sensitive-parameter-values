@@ -1,10 +1,10 @@
 # PHPStan SensitiveParameter Detector
 
-[![CI](https://github.com/LycheeOrg/phpstan-sensitive-parameter/workflows/CI/badge.svg)](https://github.com/LycheeOrg/phpstan-sensitive-parameter/actions)
-<!-- [![Latest Stable Version](https://poser.pugx.org/LycheeOrg/phpstan-sensitive-parameter/v/stable)](https://packagist.org/packages/LycheeOrg/phpstan-sensitive-parameter) -->
-<!-- [![Total Downloads](https://poser.pugx.org/LycheeOrg/phpstan-sensitive-parameter/downloads)](https://packagist.org/packages/LycheeOrg/phpstan-sensitive-parameter) -->
-[![License](https://poser.pugx.org/LycheeOrg/phpstan-sensitive-parameter/license)](https://packagist.org/packages/LycheeOrg/phpstan-sensitive-parameter)
-[![OpenSSF Scorecard][ossf-shield]](https://securityscorecards.dev/viewer/?uri=github.com/LycheeOrg/Lychee-Facial-Recognition)
+[![CI](https://github.com/LycheeOrg/phpstan-sensitive-parameter-values/workflows/CI/badge.svg)](https://github.com/LycheeOrg/phpstan-sensitive-parameter-values/actions)
+<!-- [![Latest Stable Version](https://poser.pugx.org/LycheeOrg/phpstan-sensitive-parameter-values/v/stable)](https://packagist.org/packages/LycheeOrg/phpstan-sensitive-parameter-values) -->
+<!-- [![Total Downloads](https://poser.pugx.org/LycheeOrg/phpstan-sensitive-parameter-values/downloads)](https://packagist.org/packages/LycheeOrg/phpstan-sensitive-parameter-values) -->
+[![License](https://poser.pugx.org/LycheeOrg/phpstan-sensitive-parameter-values/license)](https://packagist.org/packages/LycheeOrg/phpstan-sensitive-parameter-values)
+[![OpenSSF Scorecard][ossf-shield]](https://securityscorecards.dev/viewer/?uri=github.com/LycheeOrg/phpstan-sensitive-parameter-values)
 
 A PHPStan extension that detects parameters that might contain sensitive information and should be marked with the `#[\SensitiveParameter]` attribute (added in PHP 8.2+).
 
@@ -306,7 +306,7 @@ parameters to be more specific (e.g., `$applicationToInstall`, `$authService`,
 
 ## Reporting Issues
 
-Found a bug or have a feature request? Please [report it on GitHub](https://github.com/built-fast/phpstan-sensitive-parameter/issues).
+Found a bug or have a feature request? Please [report it on GitHub](https://github.com/LycheeOrg/phpstan-sensitive-parameter-values/issues).
 
 When reporting issues, please include:
 
@@ -322,8 +322,8 @@ Contributions are welcome! Please feel free to submit a Pull Request. For major 
 **Development setup:**
 
 ```bash
-git clone https://github.com/built-fast/phpstan-sensitive-parameter.git
-cd phpstan-sensitive-parameter
+git clone https://github.com/LycheeOrg/phpstan-sensitive-parameter-values.git
+cd phpstan-sensitive-parameter-values
 composer install
 ```
 
@@ -339,4 +339,4 @@ vendor/bin/pint --test      # Code style check
 
 MIT License - see [`LICENSE`](./LICENSE) for details.
 
-[ossf-shield]: https://api.securityscorecards.dev/projects/github.com/LycheeOrg/phpstan-sensitive-parameter-value/badge
+[ossf-shield]: https://api.securityscorecards.dev/projects/github.com/LycheeOrg/phpstan-sensitive-parameter-values/badge

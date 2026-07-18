@@ -73,6 +73,21 @@ final class PropagationCases
         propagationGlobalNonSensitiveFunction($apiKey);
     }
 
+    // $secret is marked sensitive here and passed as an unknown named argument, which is
+    // collected into the callee's unprotected variadic parameter - should trigger warning
+    public function missingPropagationOnNamedVariadicCall(#[SensitiveParameter] string $secret): void
+    {
+        $this->nonSensitiveVariadicMethod(secret: $secret);
+    }
+
+    // $password is marked sensitive here but reassigned to a literal before being forwarded, so
+    // it no longer provably holds the original sensitive value - should NOT trigger warning
+    public function reassignedParameterIsNotFlagged(#[SensitiveParameter] string $password): void
+    {
+        $password = 'redacted';
+        $this->nonSensitiveMethod($password);
+    }
+
     // Helper callee whose parameter is NOT sensitive
     public function nonSensitiveMethod(string $password): void
     {
@@ -86,6 +101,11 @@ final class PropagationCases
     // Helper callee protected via a function-level attribute
     #[SensitiveParameter]
     public function functionLevelProtectedMethod(string $password): void
+    {
+    }
+
+    // Helper callee whose variadic catch-all parameter is NOT sensitive
+    public function nonSensitiveVariadicMethod(mixed ...$values): void
     {
     }
 }

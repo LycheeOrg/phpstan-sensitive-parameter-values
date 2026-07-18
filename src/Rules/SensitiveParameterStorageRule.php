@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace BuiltFast\Rules;
+namespace LycheeOrg\PHPStan\Rules;
 
 use PhpParser\Node;
 use PhpParser\Node\Expr\Assign;
@@ -13,7 +13,9 @@ use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\FunctionLike;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Function_;
-use PhpParser\NodeFinder;
+use PhpParser\NodeTraverser;
+use PhpParser\NodeVisitor;
+use PhpParser\NodeVisitorAbstract;
 use PHPStan\Analyser\Scope;
 use PHPStan\Rules\IdentifierRuleError;
 use PHPStan\Rules\Rule;
@@ -43,7 +45,10 @@ use PHPStan\Rules\RuleErrorBuilder;
  *
  * Only direct, unmodified assignments of a bare `$variable` (or a bare
  * `->getValue()` call on one) are detected. Values that are transformed
- * before being stored are not tracked.
+ * before being stored are not tracked. If a parameter's variable is
+ * reassigned anywhere in the function, it is dropped from tracking entirely
+ * (for all of its uses) since it can no longer be proven to still hold the
+ * original sensitive value.
  *
  * @implements Rule<FunctionLike>
  */
@@ -100,13 +105,63 @@ final class SensitiveParameterStorageRule implements Rule
             return $errors;
         }
 
-        foreach ((new NodeFinder())->findInstanceOf($node->getStmts(), Assign::class) as $assign) {
+        $assigns = $this->findAssignsInCurrentScope($node->getStmts());
+
+        // If a parameter's variable is reassigned anywhere in the function,
+        // it can no longer be proven to still hold the original sensitive
+        // value at any of its uses, so stop treating it as sensitive.
+        foreach ($assigns as $assign) {
+            if ($assign->var instanceof Variable && is_string($assign->var->name)) {
+                unset($sensitiveParamNames[$assign->var->name], $wrappedParamNames[$assign->var->name]);
+            }
+        }
+
+        foreach ($assigns as $assign) {
             foreach ($this->checkAssign($assign, $sensitiveParamNames, $wrappedParamNames) as $error) {
                 $errors[] = $error;
             }
         }
 
         return $errors;
+    }
+
+    /**
+     * Finds Assign nodes in the given statements, without descending into
+     * nested function-like scopes (closures, arrow functions, nested
+     * methods/functions), which have their own independent parameter scope
+     * and may shadow the outer sensitive parameter names.
+     *
+     * @param  Node\Stmt[]  $stmts
+     * @return Assign[]
+     */
+    private function findAssignsInCurrentScope(array $stmts): array
+    {
+        $visitor = new class extends NodeVisitorAbstract {
+            /** @var Assign[] */
+            public array $assigns = [];
+
+            /**
+             * @return int|null
+             */
+            public function enterNode(Node $node)
+            {
+                if ($node instanceof FunctionLike) {
+                    return NodeVisitor::DONT_TRAVERSE_CHILDREN;
+                }
+
+                if ($node instanceof Assign) {
+                    $this->assigns[] = $node;
+                }
+
+                return null;
+            }
+        };
+
+        $traverser = new NodeTraverser();
+        $traverser->addVisitor($visitor);
+        $traverser->traverse($stmts);
+
+        return $visitor->assigns;
     }
 
     /**
@@ -168,11 +223,7 @@ final class SensitiveParameterStorageRule implements Rule
         foreach ($attrGroups as $attrGroup) {
             foreach ($attrGroup->attrs as $attr) {
                 $attrName = $attr->name->toString();
-                if (
-                    $attrName === 'SensitiveParameter' ||
-                    $attrName === '\SensitiveParameter' ||
-                    mb_strpos($attrName, 'SensitiveParameter') !== false
-                ) {
+                if ($attrName === 'SensitiveParameter' || $attrName === '\SensitiveParameter') {
                     return true;
                 }
             }
@@ -181,6 +232,13 @@ final class SensitiveParameterStorageRule implements Rule
         return false;
     }
 
+    /**
+     * True if every non-null member of the type is \SensitiveParameterValue.
+     * A plain nullable wrapper (`?SensitiveParameterValue` or
+     * `SensitiveParameterValue|null`) is safe, but a mixed union like
+     * `SensitiveParameterValue|string` is not: the raw string branch could
+     * still be stored unwrapped.
+     */
     private function isSensitiveParameterValueType(?Node $type): bool
     {
         if ($type instanceof Node\NullableType) {
@@ -189,12 +247,16 @@ final class SensitiveParameterStorageRule implements Rule
 
         if ($type instanceof Node\UnionType) {
             foreach ($type->types as $subType) {
-                if ($this->isSensitiveParameterValueType($subType)) {
-                    return true;
+                if ($this->isNullType($subType)) {
+                    continue;
+                }
+
+                if (! $this->isSensitiveParameterValueType($subType)) {
+                    return false;
                 }
             }
 
-            return false;
+            return true;
         }
 
         if ($type instanceof Node\Name) {
@@ -204,5 +266,10 @@ final class SensitiveParameterStorageRule implements Rule
         }
 
         return false;
+    }
+
+    private function isNullType(Node $type): bool
+    {
+        return $type instanceof Node\Identifier && mb_strtolower($type->toString()) === 'null';
     }
 }
