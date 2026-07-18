@@ -17,7 +17,8 @@ Learn more: [PHP RFC: Redact parameters in back traces](https://wiki.php.net/rfc
 ## Requirements
 
 - PHP 8.2 or higher
-- PHPStan 2.0 or higher
+- PHPStan 2.1.3 or higher (`SensitiveParameterPropagationRule` relies on
+  `getAttributes()` reflection support added in 2.1.3)
 
 ## Installation
 
