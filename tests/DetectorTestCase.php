@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace Tests;
 
-use BuiltFast\Rules\SensitiveParameterDetectorRule;
+use LycheeOrg\PHPStan\Rules\SensitiveParameterDetectorRule;
 use PHPStan\Testing\RuleTestCase;
 
 /**
  * @extends RuleTestCase<SensitiveParameterDetectorRule>
  */
-abstract class TestCase extends RuleTestCase
+abstract class DetectorTestCase extends RuleTestCase
 {
     protected SensitiveParameterDetectorRule $rule;
 

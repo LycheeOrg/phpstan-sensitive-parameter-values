@@ -1,7 +1,9 @@
 <?php
 
 declare(strict_types=1);
-use Tests\TestCase;
+use Tests\DetectorTestCase;
+use Tests\PropagationTestCase;
+use Tests\StorageTestCase;
 
 /*
 |--------------------------------------------------------------------------
@@ -14,7 +16,9 @@ use Tests\TestCase;
 |
 */
 
-uses(TestCase::class)->in('Feature');
+uses(DetectorTestCase::class)->in('Detector');
+uses(PropagationTestCase::class)->in('Propagation');
+uses(StorageTestCase::class)->in('Storage');
 
 /*
 |--------------------------------------------------------------------------

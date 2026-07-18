@@ -1,5 +1,17 @@
+parameters:
+    stubFiles:
+        - stubs/SensitiveParameterValue.stub
+
 services:
     -
-        class: BuiltFast\Rules\SensitiveParameterDetectorRule
+        class: LycheeOrg\PHPStan\Rules\SensitiveParameterDetectorRule
+        tags:
+            - phpstan.rules.rule
+    -
+        class: LycheeOrg\PHPStan\Rules\SensitiveParameterPropagationRule
+        tags:
+            - phpstan.rules.rule
+    -
+        class: LycheeOrg\PHPStan\Rules\SensitiveParameterStorageRule
         tags:
             - phpstan.rules.rule

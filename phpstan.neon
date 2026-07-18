@@ -8,4 +8,4 @@ parameters:
         - tests/Fixtures/*
     
     # PHP version (match your composer.json requirement)
-    phpVersion: 80000
+    phpVersion: 80200

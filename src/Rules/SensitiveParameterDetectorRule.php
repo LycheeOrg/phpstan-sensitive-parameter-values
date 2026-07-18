@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace BuiltFast\Rules;
+namespace LycheeOrg\PHPStan\Rules;
 
 use PhpParser\Node;
 use PhpParser\Node\FunctionLike;
@@ -154,6 +154,10 @@ final class SensitiveParameterDetectorRule implements Rule
 
             $paramName = $param->var->name;
 
+            if (str_starts_with($paramName, 'is') || $this->hasBoolType($param->type)) {
+                continue;
+            }
+
             $paramHasSensitiveAttribute = false;
 
             if ($param->attrGroups) {
@@ -195,5 +199,20 @@ final class SensitiveParameterDetectorRule implements Rule
         }
 
         return $errors;
+    }
+
+    /**
+     * Determine whether a parameter's type hint is exactly bool, optionally
+     * nullable (`bool` or `?bool`). Union types such as `bool|string` are not
+     * considered bool, since the parameter can still hold a non-boolean
+     * value.
+     */
+    private function hasBoolType(?Node $type): bool
+    {
+        if ($type instanceof Node\NullableType) {
+            $type = $type->type;
+        }
+
+        return $type instanceof Node\Identifier && mb_strtolower($type->toString()) === 'bool';
     }
 }

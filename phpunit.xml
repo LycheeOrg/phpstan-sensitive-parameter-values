@@ -7,8 +7,17 @@
         <testsuite name="Unit">
             <directory>tests/Unit</directory>
         </testsuite>
-        <testsuite name="Feature">
-            <directory>tests/Feature</directory>
+        <testsuite name="Detector">
+            <directory>tests/Detector</directory>
+        </testsuite>
+        <testsuite name="Types">
+            <directory>tests/Types</directory>
+        </testsuite>
+        <testsuite name="Propagation">
+            <directory>tests/Propagation</directory>
+        </testsuite>
+        <testsuite name="Storage">
+            <directory>tests/Storage</directory>
         </testsuite>
     </testsuites>
     <php>
