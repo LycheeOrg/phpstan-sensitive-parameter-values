@@ -21,7 +21,6 @@ update:
 
 test:
 	vendor/bin/pest
-
 test-coverage:
 	vendor/bin/pest --coverage
 
