@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Fixtures\Propagation;
 
 use SensitiveParameter;
+use SensitiveParameterValue;
 
 /**
  * Test fixture for SensitiveParameterPropagationRule: a parameter marked
@@ -86,6 +87,12 @@ final class PropagationCases
     {
         $password = 'redacted';
         $this->nonSensitiveMethod($password);
+    }
+
+    // $value is marked sensitive and wrapped in SensitiveParameterValue - should NOT trigger warning
+    public function wrappedInSensitiveParameterValueIsNotFlagged(#[SensitiveParameter] string $value): void
+    {
+        new SensitiveParameterValue($value);
     }
 
     // Helper callee whose parameter is NOT sensitive
