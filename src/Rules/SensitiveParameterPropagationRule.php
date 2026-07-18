@@ -143,6 +143,12 @@ final class SensitiveParameterPropagationRule implements Rule
                 return null;
             }
 
+            // Wrapping a sensitive value in SensitiveParameterValue is the
+            // intended safe pattern – never flag it as missing propagation.
+            if ($type->getObjectClassNames() === ['SensitiveParameterValue']) {
+                return null;
+            }
+
             $method = $type->getMethod('__construct', $scope);
             $variant = $this->selectVariant($scope, $node, $method->getVariants(), $method->getNamedArgumentsVariants());
 

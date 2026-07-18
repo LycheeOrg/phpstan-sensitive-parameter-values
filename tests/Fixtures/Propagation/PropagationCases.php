@@ -88,6 +88,12 @@ final class PropagationCases
         $this->nonSensitiveMethod($password);
     }
 
+    // $value is marked sensitive and wrapped in SensitiveParameterValue - should NOT trigger warning
+    public function wrappedInSensitiveParameterValueIsNotFlagged(#[SensitiveParameter] string $value): void
+    {
+        new \SensitiveParameterValue($value);
+    }
+
     // Helper callee whose parameter is NOT sensitive
     public function nonSensitiveMethod(string $password): void
     {
