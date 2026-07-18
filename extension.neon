@@ -1,14 +1,27 @@
+parametersSchema:
+    sensitiveParameter: structure([
+        keywords: listOf(string())
+        cryptoCallees: listOf(string())
+    ])
+
 parameters:
     stubFiles:
         - stubs/SensitiveParameterValue.stub
+    sensitiveParameter:
+        keywords: []
+        cryptoCallees: []
 
 services:
     -
         class: LycheeOrg\PHPStan\Rules\SensitiveParameterDetectorRule
+        arguments:
+            sensitiveKeywords: %sensitiveParameter.keywords%
         tags:
             - phpstan.rules.rule
     -
         class: LycheeOrg\PHPStan\Rules\SensitiveParameterPropagationRule
+        arguments:
+            cryptoCallees: %sensitiveParameter.cryptoCallees%
         tags:
             - phpstan.rules.rule
     -
